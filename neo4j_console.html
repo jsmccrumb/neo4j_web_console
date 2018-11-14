@@ -1,0 +1,203 @@
+<script src="./js/neo4j-web.js"></script>
+<link rel="stylesheet" href="./css/bootstrap.css">
+<script src="./js/jquery-2.1.1.min.js"></script>
+<script src="./js/bootstrap.min.js"></script>
+<div class="container-fluid">
+	<div class="center h2">Hello World! <button class="btn btn-primary btn-sm" id="toggleQueries">Queries Are Allowed</div>
+	<div id="info"></div>
+	<div id="driverDiv" class="col-sm-10 col-lg-6 col-lg-offset-3 col-sm-offset-1 form-inline">
+		<div class="form-group">
+			<label for="bolt" class="control-label">Bolt URI:</label>
+			<input class="form-control" id="bolt" placeholder="bolt://....."/>
+		</div>
+		<div class="form-group">
+			<label for="user-input" class="control-label">UserName:</label>
+			<input class="form-control" id="user-input"/>
+		</div>
+		<div class="form-group">
+			<label for="psInput" class="control-label">Password:</label>
+			<input class="form-control" type="password" id="pwInput" placeholder="password" />
+		</div>
+		<button class="btn btn-primary" id="getDriver">Call Uber</button>
+	</div>
+	<div id="addQueries"  class="col-sm-10 col-lg-8 col-lg-offset-2 col-sm-offset-1 hidden">
+		<label for="queryName" class="control-label">Query Name:</label>
+		<input id="queryName" class="form-control" />
+		<label for="cypher" class="control-label">Cypher:</label>
+		<textarea id="cypher" rows=4 placeholder="Enter cypher query" class="form-control"></textarea>
+		<label for="params" class="control-label">Params: </label>
+		<textarea id="params" rows=3 placeholder="Enter params as JSON" class="form-control"></textarea>
+		<label class="radio-inline"><input type="radio" name="queryType" value="batch">Batched</label>
+		<label class="radio-inline"><input type="radio" name="queryType" value="read">Read Only</label>
+		<label class="radio-inline"><input type="radio" name="queryType" value="write">Write</label>
+		<br/>
+		<label for="batch-key" class="control-label">Batch Key:</label>
+		<input class="form-control" id="batch-key" value="labelsRemoved"/>
+		<button class="btn btn-primary" id="addQuery">Add Query</button>
+	</div>
+	<div class="col-xs-10 col-xs-offset-1" id="summary"></div>
+</div>
+<script>
+document.getElementById('getDriver').onclick = (e) => {
+	let bolt = document.getElementById('bolt').value;
+	let pw = document.getElementById('pwInput').value;
+	let userName = document.getElementById('user-input').value;
+	if (window.driver && window.driver.close) {
+		window.driver.close();
+	}
+	if (bolt != null && pw != null && userName != null) {
+		window.driver = neo4j.v1.driver(bolt, neo4j.v1.auth.basic(userName, pw));
+		document.getElementById('info').innerText = 'Driver ready!';
+		document.getElementById('driverDiv').classList.add('hidden');
+		document.getElementById('addQueries').classList.remove('hidden');
+	}
+}
+
+writeQuery = async function(session, cypher, params = {}) {
+	if (!allowQueries) throw "Queries are not allowed, sorry!";
+	return await session.writeTransaction(tx => tx.run(cypher, params));
+}
+
+readQuery = async function(session, cypher, params = {}) {
+	if (!allowQueries) throw "Queries are not allowed, sorry!";
+	return await session.readTransaction(tx => tx.run(cypher, params));
+}
+
+checkProcess = async function(session, label) {
+	return await readQuery(session, `MATCH (n:${label}) RETURN count(*)`);
+}
+
+runBatchQuery = async function(session, queryData) {
+	try {
+		let batchKey = queryData.batchKey || 'labelsRemoved';
+		let resp = await writeQuery(session, queryData.cypher, queryData.params);
+		if (resp.summary.counters[batchKey]() > 0) {
+			document.getElementById('summary').innerText = `Batch complete in ${resp.summary.resultAvailableAfter / 1000} seconds!`;
+			if (queryData.responseKey) {
+				if (cypherResponses[queryData.responseKey] == null) cypherResponses[queryData.responseKey] = [];
+				cypherResponses[queryData.responseKey].push(resp);
+			}
+			return await runBatchQuery(session, queryData);
+		}
+	} catch (e) {
+		window.lastError = e;
+		if (allowQueries && window.errorCount < 10) {
+			window.errorCount++;
+			return await runBatchQuery(session, queryData);
+		} else {
+			throw e;
+		}
+	}
+}
+
+runNextQuery = async function() {
+	let queryData = queries[0];
+	let session = driver.session();
+	if (queryData && queryData.cypher) {
+		try {
+			let responseKey = queryData.responseKey == null ? "unnamed" : queryData.responseKey;
+			queryHistory[responseKey] = {};
+			queryHistory[responseKey].startTime = Date.now();
+			if (queryData.isBatched) {
+				await runBatchQuery(session, queryData);
+				if (queryData.processLabel != null) {
+					let remainingCount = await checkProcess(session, queryData.processLabel);
+					if (remainingCount != 0) throw "Process labels not count of 0";
+				}
+			} else if (queryData.isReadOnly) {
+				let resp = await readQuery(session, queryData.cypher, queryData.params);
+				if (queryData.responseKey) {
+					if (cypherResponses[queryData.responseKey] == null) cypherResponses[queryData.responseKey] = [];
+					cypherResponses[queryData.responseKey].push(resp);
+				}
+			} else {
+				let resp = await writeQuery(session, queryData.cypher, queryData.params);
+				if (queryData.responseKey) {
+					if (cypherResponses[queryData.responseKey] == null) cypherResponses[queryData.responseKey] = [];
+					cypherResponses[queryData.responseKey].push(resp);
+				}
+			}
+			queryHistory[responseKey].endTime = Date.now();
+			document.getElementById('summary').innerText = `Query complete in ${(queryHistory[responseKey].endTime - queryHistory[responseKey].startTime) / 1000 / 60} minutes!`;
+			console.log(`stats for ${responseKey}:`, getStats(responseKey));
+			lastQuery = queries.shift();
+			session.close();
+		} catch (err) {
+			document.getElementById('summary').innerText = err.message;
+			session.close();
+			throw err;
+		}
+	} else {
+		throw "QueryDate is null or no cypher";
+	}
+}
+
+runAllQueries = async function() {
+	if (allowQueries && queries.length > 0) {
+		try {
+			await runNextQuery();
+			await runAllQueries();
+		} catch (err) {
+			console.log("error -- no longer processing", err)
+		}
+	}
+}
+
+addQuery = function(e) {
+	let cypher = document.getElementById('cypher').value;
+	let params = document.getElementById('params').value;
+	let batchKey = document.getElementById('batch-key').value;
+	if (params != null)
+		params = JSON.parse(params);
+	let queryName = document.getElementById('queryName').value;
+	let queryType = $('input[name=queryType]:checked').val();
+	if (queryType == null) queryType = "read";
+	if (cypher != null) {
+		queries.push({responseKey: queryName, isBatched: queryType == 'batch', isReadOnly: queryType == 'read', batchKey, cypher, params});
+		if (queries.length == 1 && allowQueries) runAllQueries();
+	}
+}
+
+getStats = function(queryKey) { 
+	let res = {};
+	res.totalTimeJS = humanReadableTime((queryHistory[queryKey].endTime == null ? Date.now() : queryHistory[queryKey].endTime) - queryHistory[queryKey].startTime);
+	res.totalTimeCypher = humanReadableTime(cypherResponses[queryKey].reduce((acc, curr) => acc + curr.summary.resultAvailableAfter.toNumber(), 0)); 
+	res.aveTime = humanReadableTime(cypherResponses[queryKey].reduce((acc, curr) => acc + curr.summary.resultAvailableAfter.toNumber(), 0) / cypherResponses[queryKey].length);
+	res.batchSize = cypherResponses[queryKey][0].summary.statement.parameters.batchSize;
+	res.batchs = cypherResponses[queryKey].length;
+	res.minTime = humanReadableTime(Math.min(...cypherResponses[queryKey].map((curr) => curr.summary.resultAvailableAfter.toNumber())));
+	res.maxTime = humanReadableTime(Math.max(...cypherResponses[queryKey].map((curr) => curr.summary.resultAvailableAfter.toNumber())));
+	res.aveRel = cypherResponses[queryKey].reduce((acc, curr) => acc + curr.summary.counters.relationshipsCreated(), 0) / cypherResponses[queryKey].length;
+	res.minRel = Math.min(...cypherResponses[queryKey].map((curr) => curr.summary.counters.relationshipsCreated()));
+	res.maxRel = Math.max(...cypherResponses[queryKey].map((curr) => curr.summary.counters.relationshipsCreated()));
+	res.aveProps = cypherResponses[queryKey].reduce((acc, curr) => acc + curr.summary.counters.propertiesSet(), 0) / cypherResponses[queryKey].length;
+	res.minProps = Math.min(...cypherResponses[queryKey].map((curr) => curr.summary.counters.propertiesSet()));
+	res.maxProps = Math.max(...cypherResponses[queryKey].map((curr) => curr.summary.counters.propertiesSet()));
+	res.aveNodes = cypherResponses[queryKey].reduce((acc, curr) => acc + curr.summary.counters.nodesCreated(), 0) / cypherResponses[queryKey].length;
+	res.minNodes = Math.min(...cypherResponses[queryKey].map((curr) => curr.summary.counters.nodesCreated()));
+	res.maxNodes = Math.max(...cypherResponses[queryKey].map((curr) => curr.summary.counters.nodesCreated()));
+	return res;
+}
+
+humanReadableTime = function(ms) { 
+	let hours = Math.floor(ms / 3600000);
+	let mins = Math.floor((ms % 3600000) / 60000);
+	let seconds = Math.floor((ms % 60000) / 1000);
+	let millisec = ms % 1000;
+	return `${hours > 0 ? `${hours}hr ` : ''}${mins > 0 ? `${mins}min ` : ''}${seconds > 0 ? `${seconds}sec ` : ''}${Math.round(millisec)}ms`; 
+}
+
+document.getElementById('addQuery').onclick = addQuery;
+document.getElementById('toggleQueries').onclick = (e) => {
+	allowQueries = !allowQueries;
+	e.currentTarget.innerText = `Queries Are ${allowQueries ? '' : "Not"} Allowed`;
+}
+
+window.errorCount = 0;
+window.cypherResponses = {}
+window.queryHistory = {};
+window.queries = [];
+window.allowQueries = true;
+window.lastQuery = "RETURN 'HELLO WORLD'";
+window.lastError;
+</script>
