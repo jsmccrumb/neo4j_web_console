@@ -5,7 +5,7 @@
 <div class="container-fluid">
 	<div class="center h2">Hello World! <button class="btn btn-primary btn-sm" id="toggleQueries">Queries Are Allowed</div>
 	<div id="info"></div>
-	<div id="driverDiv" class="col-sm-10 col-lg-6 col-lg-offset-3 col-sm-offset-1 form-inline">
+	<form id="driver-form" class="col-sm-10 col-sm-offset-1 form-inline">
 		<div class="form-group">
 			<label for="bolt" class="control-label">Bolt URI:</label>
 			<input class="form-control" id="bolt" placeholder="bolt://....."/>
@@ -18,27 +18,64 @@
 			<label for="psInput" class="control-label">Password:</label>
 			<input class="form-control" type="password" id="pwInput" placeholder="password" />
 		</div>
-		<button class="btn btn-primary" id="getDriver">Call Uber</button>
-	</div>
+		<button type="submit" class="btn btn-primary" id="getDriver">Call Uber</button>
+	</form>
 	<div id="addQueries"  class="col-sm-10 col-lg-8 col-lg-offset-2 col-sm-offset-1 hidden">
-		<label for="queryName" class="control-label">Query Name:</label>
-		<input id="queryName" class="form-control" />
-		<label for="cypher" class="control-label">Cypher:</label>
-		<textarea id="cypher" rows=4 placeholder="Enter cypher query" class="form-control"></textarea>
-		<label for="params" class="control-label">Params: </label>
-		<textarea id="params" rows=3 placeholder="Enter params as JSON" class="form-control"></textarea>
-		<label class="radio-inline"><input type="radio" name="queryType" value="batch">Batched</label>
-		<label class="radio-inline"><input type="radio" name="queryType" value="read">Read Only</label>
-		<label class="radio-inline"><input type="radio" name="queryType" value="write">Write</label>
-		<br/>
-		<label for="batch-key" class="control-label">Batch Key:</label>
-		<input class="form-control" id="batch-key" value="labelsRemoved"/>
-		<button class="btn btn-primary" id="addQuery">Add Query</button>
+    <div>
+      <!-- Nav tabs -->
+      <ul class="nav nav-tabs" role="tablist">
+        <li role="presentation" class="active"><a href="#basic-queries" aria-controls="basic-queries" role="tab" data-toggle="tab">Basic Queries</a></li>
+        <li role="presentation"><a href="#add-adhoc" aria-controls="add-adhoc" role="tab" data-toggle="tab">Add Adhoc Process</a></li>
+        <li role="presentation"><a href="#run-adhoc" aria-controls="run-adhoc" role="tab" data-toggle="tab">Run Adhoc Processes</a></li>
+      </ul>
+      <!-- Tab panes -->
+      <div class="tab-content">
+        <div role="tabpanel" class="tab-pane active" id="basic-queries">
+          <!-- TODO: use names, update JS code to use FormData -->
+          <form id="add-query-form">
+            <label for="queryName" class="control-label">Query Name:</label>
+            <input id="queryName" class="form-control" />
+            <label for="cypher" class="control-label">Cypher:</label>
+            <textarea id="cypher" rows=4 placeholder="Enter cypher query" class="form-control" required></textarea>
+            <label for="params" class="control-label">Params: </label>
+            <textarea id="params" rows=3 placeholder="Enter params as JSON" class="form-control"></textarea>
+            <label class="radio-inline"><input type="radio" name="queryType" value="batch">Batched</label>
+            <label class="radio-inline"><input type="radio" name="queryType" value="read">Read Only</label>
+            <label class="radio-inline"><input type="radio" name="queryType" value="write">Write</label>
+            <br/>
+            <label for="batch-key" class="control-label">Batch Key:</label>
+            <input class="form-control" id="batch-key" value="labelsRemoved"/>
+            <button type="submit" class="btn btn-primary" id="addQuery">Add Query</button>
+          </form>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="add-adhoc">
+          <form id="add-adhoc-form">
+            <label for="queryNameAdhoc" class="control-label">Query Name:</label>
+            <input id="queryNameAdhoc" class="form-control" />
+            <label for="cypherAdhoc" class="control-label">Cypher:</label>
+            <textarea id="cypherAdhoc" rows=4 placeholder="Enter cypher query" class="form-control" required></textarea>
+            <label for="paramsAdhoc" class="control-label">Params: </label>
+            <textarea id="paramsAdhoc" rows=3 placeholder="Enter params as JSON" class="form-control"></textarea>
+            <label class="radio-inline"><input type="radio" name="queryTypeAdhoc" value="batch">Batched</label>
+            <label class="radio-inline"><input type="radio" name="queryTypeAdhoc" value="read">Read Only</label>
+            <label class="radio-inline"><input type="radio" name="queryTypeAdhoc" value="write">Write</label>
+            <br/>
+            <label for="batch-keyAdhoc" class="control-label">Batch Key:</label>
+            <input class="form-control" id="batch-keyAdhoc" value="labelsRemoved"/>
+            <button type="submit" class="btn btn-primary" id="addQueryAdhoc">Add Query</button>
+          </form>
+        </div>
+        <div role="tabpanel" class="tab-pane" id="run-adhoc">...</div>
+      </div>
+    </div>
 	</div>
 	<div class="col-xs-10 col-xs-offset-1" id="summary"></div>
 </div>
 <script>
-document.getElementById('getDriver').onclick = (e) => {
+$(() => document.getElementById('bolt').focus());
+document.getElementById('driver-form').onsubmit = (e) => {
+  e.preventDefault();
+  console.log('submit!');
 	let bolt = document.getElementById('bolt').value;
 	let pw = document.getElementById('pwInput').value;
 	let userName = document.getElementById('user-input').value;
@@ -48,8 +85,9 @@ document.getElementById('getDriver').onclick = (e) => {
 	if (bolt != null && pw != null && userName != null) {
 		window.driver = neo4j.v1.driver(bolt, neo4j.v1.auth.basic(userName, pw));
 		document.getElementById('info').innerText = 'Driver ready!';
-		document.getElementById('driverDiv').classList.add('hidden');
+		document.getElementById('driver-form').classList.add('hidden');
 		document.getElementById('addQueries').classList.remove('hidden');
+    document.getElementById('queryName').focus();
 	}
 }
 
@@ -145,13 +183,16 @@ runAllQueries = async function() {
 
 addQuery = function(e) {
 	let cypher = document.getElementById('cypher').value;
-	let params = document.getElementById('params').value;
+	let params;
 	let batchKey = document.getElementById('batch-key').value;
-	if (params != null)
-		params = JSON.parse(params);
 	let queryName = document.getElementById('queryName').value;
 	let queryType = $('input[name=queryType]:checked').val();
 	if (queryType == null) queryType = "read";
+  try {
+		params = JSON.parse(document.getElementById('params').value);
+  } catch (e) {
+    console.warn('params not successfully parsed!');
+  }
 	if (cypher != null) {
 		queries.push({responseKey: queryName, isBatched: queryType == 'batch', isReadOnly: queryType == 'read', batchKey, cypher, params});
 		if (queries.length == 1 && allowQueries) runAllQueries();
@@ -187,10 +228,17 @@ humanReadableTime = function(ms) {
 	return `${hours > 0 ? `${hours}hr ` : ''}${mins > 0 ? `${mins}min ` : ''}${seconds > 0 ? `${seconds}sec ` : ''}${Math.round(millisec)}ms`; 
 }
 
-document.getElementById('addQuery').onclick = addQuery;
+document.getElementById('add-query-form').onsubmit = (e) => {
+  e.preventDefault();
+  addQuery();
+}
+
 document.getElementById('toggleQueries').onclick = (e) => {
 	allowQueries = !allowQueries;
 	e.currentTarget.innerText = `Queries Are ${allowQueries ? '' : "Not"} Allowed`;
+  if (allowQueries) {
+    runAllQueries();
+  }
 }
 
 window.errorCount = 0;
