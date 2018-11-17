@@ -51,17 +51,19 @@
         <div role="tabpanel" class="tab-pane" id="add-adhoc">
           <form id="add-adhoc-form">
             <label for="queryNameAdhoc" class="control-label">Query Name:</label>
-            <input id="queryNameAdhoc" class="form-control" />
+            <input id="queryNameAdhoc" name="queryNameAdhoc" class="form-control" required/>
             <label for="cypherAdhoc" class="control-label">Cypher:</label>
-            <textarea id="cypherAdhoc" rows=4 placeholder="Enter cypher query" class="form-control" required></textarea>
+            <textarea id="cypherAdhoc" name="cypherAdhoc" rows=4 placeholder="Enter cypher query" class="form-control" required></textarea>
             <label for="paramsAdhoc" class="control-label">Params: </label>
-            <textarea id="paramsAdhoc" rows=3 placeholder="Enter params as JSON" class="form-control"></textarea>
+            <textarea id="paramsAdhoc" name="paramsAdhoc" rows=3 placeholder="Enter params as JSON" class="form-control"></textarea>
             <label class="radio-inline"><input type="radio" name="queryTypeAdhoc" value="batch">Batched</label>
             <label class="radio-inline"><input type="radio" name="queryTypeAdhoc" value="read">Read Only</label>
             <label class="radio-inline"><input type="radio" name="queryTypeAdhoc" value="write">Write</label>
             <br/>
-            <label for="batch-keyAdhoc" class="control-label">Batch Key:</label>
-            <input class="form-control" id="batch-keyAdhoc" value="labelsRemoved"/>
+            <label for="batchKeyAdhoc" class="control-label">Batch Key:</label>
+            <input class="form-control" id="batchKeyAdhoc" name="batchKeyAdhoc" value="labelsRemoved"/>
+            <label for="processingLabelAdhoc" class="control-label">Processing Label:</label>
+            <input class="form-control" id="processingLabelAdhoc" name="processingLabelAdhoc" />
             <button type="submit" class="btn btn-primary" id="addQueryAdhoc">Add Query</button>
           </form>
         </div>
@@ -230,7 +232,20 @@ humanReadableTime = function(ms) {
 
 document.getElementById('add-query-form').onsubmit = (e) => {
   e.preventDefault();
-  addQuery();
+  let form = e.target;
+  if (form.checkValidity()) {
+    addQuery();
+  }
+}
+
+document.getElementById('add-adhoc-form').onsubmit = (e) => {
+  e.preventDefault();
+  let form = e.target;
+  if (form.checkValidity()) {
+    let data = new FormData(form);
+    // TODO: run query to create :AdhocProcess node
+    console.log('lets do this!');
+  }
 }
 
 document.getElementById('toggleQueries').onclick = (e) => {
