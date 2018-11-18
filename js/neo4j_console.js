@@ -1,20 +1,22 @@
 $(() => document.getElementById('bolt').focus());
 document.getElementById('driver-form').onsubmit = (e) => {
   e.preventDefault();
-  console.log('submit!');
-	let bolt = document.getElementById('bolt').value;
-	let pw = document.getElementById('pwInput').value;
-	let userName = document.getElementById('user-input').value;
-	if (window.driver && window.driver.close) {
-		window.driver.close();
-	}
-	if (bolt != null && pw != null && userName != null) {
-		window.driver = neo4j.v1.driver(bolt, neo4j.v1.auth.basic(userName, pw));
-		document.getElementById('info').innerText = 'Driver ready!';
-		document.getElementById('driver-form').classList.add('hidden');
-		document.getElementById('addQueries').classList.remove('hidden');
-    document.getElementById('queryName').focus();
-	}
+  if (e.target.checkValidity()) {
+    console.log('submit!');
+    let bolt = document.getElementById('bolt').value;
+    let pw = document.getElementById('pwInput').value;
+    let userName = document.getElementById('user-input').value;
+    if (window.driver && window.driver.close) {
+      window.driver.close();
+    }
+    if (bolt != null && pw != null && userName != null) {
+      window.driver = neo4j.v1.driver(bolt, neo4j.v1.auth.basic(userName, pw));
+      document.getElementById('info').innerText = 'Driver ready!';
+      document.getElementById('driver-form').classList.add('hidden');
+      document.getElementById('addQueries').classList.remove('hidden');
+      document.getElementById('queryName').focus();
+    }
+  }
 }
 
 writeQuery = async function(session, cypher, params = {}) {
@@ -28,7 +30,8 @@ readQuery = async function(session, cypher, params = {}) {
 }
 
 checkProcess = async function(session, label) {
-	return await readQuery(session, `MATCH (n:${label}) RETURN count(*)`);
+	let result = await readQuery(session, `MATCH (n:${label}) RETURN count(*) AS total`);
+  return result.records[0].get('total'); 
 }
 
 runBatchQuery = async function(session, queryData) {
@@ -54,10 +57,86 @@ runBatchQuery = async function(session, queryData) {
 	}
 }
 
+getNextProcess = async function(session) {
+  let cypher = `// get next unblocked and unfinished process
+    MATCH (n:AdhocProcess)
+    WHERE n.status <> 'complete' OR n.status IS NULL
+    WITH n, size([(op)-[:BLOCKS*]->(n) | op]) AS preReqs
+    RETURN n { .batchKey, 
+      .processingLabel, 
+      .processId, 
+      .cypher, 
+      .queryName, 
+      .params, 
+      .queryType,
+      preReqs
+    } AS adhocProcess ORDER BY preReqs LIMIT 1
+  `;
+  let result = (await readQuery(session, cypher)).records[0];
+  let adhocProcess = result == null ? null : result.get("adhocProcess");
+  return adhocProcess;
+}
+
+runAdhocProcesses = async function(session) {
+  // use one session til all processes done to ensure casual consistency
+  if (session == null) session = driver.session();
+  let adhocProcess = await getNextProcess(session);
+  if (adhocProcess) {
+    await startProcess(adhocProcess, session);
+    await runProcess(adhocProcess, session);
+    await endProcess(adhocProcess, session);
+    runAdhocProcesses(session);
+  } else {
+    session.close();
+    document.getElementById('run-adhoc-processes').classList.remove('disabled');
+  }
+}
+
+startProcess = async function(adhocProcess, session) {
+  let cypher = 'MATCH (n:AdhocProcess {processId: $processId}) SET n.status = $status, n.startTime = coalesce(n.startTime, dateTime())';
+  let params = {processId: adhocProcess.processId, status: 'running'};
+  if (adhocProcess.queryType === 'batch' &&
+      ['complete','running','error'].indexOf(adhocProcess.status) === -1 &&
+      adhocProcess.processingLabel != null &&
+      /^[A-Za-z0-9_]+$/.test(adhocProcess.processingLabel)) {
+    let totalToProcess = await checkProcess(session, adhocProcess.processingLabel);
+    cypher += ', n.totalToProcess = $totalToProcess';
+    params.totalToProcess = totalToProcess;
+  }
+  await writeQuery(session, cypher, params);
+}
+
+runProcess = async function(adhocProcess, session) {
+  try {
+    adhocProcess.params = JSON.parse(adhocProcess.params);
+  } catch (err) {
+    console.warn("parsing adhoc params failed", adhocProcess);
+  }
+  adhocProcess.isBatched = adhocProcess.queryType === 'batch';
+  adhocProcess.isReadOnly = adhocProcess.queryType === 'read';
+  // hack to make sure key is unique for stats
+  adhocProcess.queryName = adhocProcess.processId;
+  await runQuery(adhocProcess, session);
+}
+
+endProcess = async function(adhocProcess, session) {
+  let cypher = 'MATCH (n:AdhocProcess {processId: $processId}) SET n.status = $status, n.endTime = dateTime() SET n += $processStats';
+  let processStats = getProcessStats(adhocProcess.processId);
+  let params = {processId: adhocProcess.processId, status: 'complete', processStats};
+  await writeQuery(session, cypher, params);
+}
+
+getProcessStats = function(process) {
+  let keys = ['labelsAdded', 'labelsRemoved', 'nodesCreated', 'nodesDeleted', 'propertiesSet', 'relationshipsCreated', 'relationshipsDeleted'];
+  let stats = {batches: cypherResponses[process].length};
+  keys.map(k => stats[k] = 0);
+  cypherResponses[process].forEach(resp => keys.map(k => stats[k] += resp.summary.counters[k]()));
+  return stats;
+}
+
 // for running any given queryData
-runQuery = async function(queryData) {
+runQuery = async function(queryData, session) {
 	if (queryData && queryData.cypher) {
-    let session = driver.session();
 		try {
 			let queryName = queryData.queryName == null ? "unnamed" : queryData.queryName;
 			queryHistory[queryName] = {};
@@ -81,10 +160,8 @@ runQuery = async function(queryData) {
 			document.getElementById('summary').innerText = `Query complete in ${(queryHistory[queryName].endTime - queryHistory[queryName].startTime) / 1000 / 60} minutes!`;
 			console.log(`stats for ${queryName}:`, getStats(queryName));
 			lastQuery = queryData;
-			session.close();
 		} catch (err) {
 			document.getElementById('summary').innerText = err.message;
-			session.close();
 			throw err;
 		}
 	} else {
@@ -95,7 +172,12 @@ runQuery = async function(queryData) {
 // for running through queries array
 runNextQuery = async function() {
 	let queryData = queries[0];
-  await runQuery(queryData);
+  let session = driver.session();
+  try {
+    await runQuery(queryData, session);
+  } finally {
+    session.close();
+  }
   queries.shift();
 }
 
@@ -195,12 +277,24 @@ document.getElementById('add-adhoc-form').onsubmit = (e) => {
           cypher, params, batchKey, queryName, queryType, processingLabel
         }
       };
-      runQuery({
-        cypher: createNode,
-        params: createParams,
-        queryName: `create-${queryName}`
-      });
+      let session = driver.session();
+      try {
+        runQuery({
+          cypher: createNode,
+          params: createParams,
+          queryName: `create-${queryName}`
+        }, session);
+      } finally {
+        session.close();
+      }
     }
+  }
+}
+
+document.getElementById('run-adhoc-processes').onclick = (e) => {
+  if (!e.target.classList.contains('disabled')) {
+    e.target.classList.add('disabled');
+    runAdhocProcesses();
   }
 }
 
