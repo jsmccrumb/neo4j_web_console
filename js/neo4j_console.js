@@ -247,10 +247,7 @@ document.getElementById('add-query-form').onsubmit = (e) => {
   }
 }
 
-document.getElementById('add-adhoc-form').onsubmit = (e) => {
-  e.preventDefault();
-  let form = e.target;
-  if (form.checkValidity()) {
+addAdhocProcess = async function(form) {
     let data = new FormData(form);
     let cypher = data.get('cypherAdhoc');
     let params = data.get('paramsAdhoc');
@@ -260,7 +257,6 @@ document.getElementById('add-adhoc-form').onsubmit = (e) => {
     let processingLabel = data.get('processingLabelAdhoc');
     if (queryType == null) queryType = "read";
     if (cypher != null) {
-      // TODO: run query to create :AdhocProcess node
       let processId = `${queryName}-${Date.now()}`;
       let createNode = `// create an adhoc node with data for processing
         // use create because we WANT to error if already exists with this id
@@ -279,15 +275,23 @@ document.getElementById('add-adhoc-form').onsubmit = (e) => {
       };
       let session = driver.session();
       try {
-        runQuery({
+        await runQuery({
           cypher: createNode,
           params: createParams,
           queryName: `create-${queryName}`
-        }, session);
+        }, session)
+        document.getElementById('summary').innerText = "AdhocProcess added";
       } finally {
         session.close();
       }
     }
+}
+
+document.getElementById('add-adhoc-form').onsubmit = (e) => {
+  e.preventDefault();
+  let form = e.target;
+  if (form.checkValidity()) {
+    addAdhocProcess(form);
   }
 }
 
