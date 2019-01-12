@@ -1,23 +1,28 @@
 <link rel="stylesheet" href="./css/bootstrap.css">
 <div class="container-fluid">
-	<div class="center h2">Hello World! <button class="btn btn-primary btn-sm" id="toggleQueries">Queries Are Allowed</div>
-	<div id="info"></div>
-	<form id="driver-form" class="col-sm-10 col-sm-offset-1 form-inline">
-		<div class="form-group">
-			<label for="bolt" class="control-label">Bolt URI:</label>
-			<input class="form-control" id="bolt" placeholder="bolt://....." required />
-		</div>
-		<div class="form-group">
-			<label for="user-input" class="control-label">UserName:</label>
-			<input class="form-control" id="user-input" required />
-		</div>
-		<div class="form-group">
-			<label for="psInput" class="control-label">Password:</label>
-			<input class="form-control" type="password" id="pwInput" placeholder="password" required />
-		</div>
-		<button type="submit" class="btn btn-primary" id="getDriver">Get Driver</button>
-	</form>
-	<div id="addQueries"  class="col-sm-10 col-lg-8 col-lg-offset-2 col-sm-offset-1 hidden">
+  <div class="center h2">Hello World! <button class="btn btn-primary btn-sm" id="toggleQueries">Queries Are Allowed</div>
+  <div id="info"></div>
+  <form id="driver-form" class="col-sm-10 col-sm-offset-1 form-inline">
+    <div class="form-group">
+      <label for="bolt" class="control-label">Bolt URI:</label>
+      <input type="text" name="bolt" id="bolt" class="form-control" placeholder="bolt://..." required>
+      <!-- could use below to have a dropdown of bolts to choose from -->
+      <!--<select class="form-control" name="bolt" id="bolt" required>
+        <option value="bolt1">BOLT1</option>
+        <option value="bolt2">BOLT2</option>
+      </select> -->
+    </div>
+    <div class="form-group">
+      <label for="user-input" class="control-label">UserName:</label>
+      <input class="form-control" id="user-input" required />
+    </div>
+    <div class="form-group">
+      <label for="psInput" class="control-label">Password:</label>
+      <input class="form-control" type="password" id="pwInput" placeholder="password" required />
+    </div>
+    <button type="submit" class="btn btn-primary" id="getDriver">Get Driver</button>
+  </form>
+  <div id="addQueries"  class="col-sm-10 col-lg-8 col-lg-offset-2 col-sm-offset-1 hidden">
     <div>
       <!-- Nav tabs -->
       <ul class="nav nav-tabs" role="tablist">
@@ -39,6 +44,7 @@
             <label class="radio-inline"><input type="radio" name="queryType" value="batch">Batched</label>
             <label class="radio-inline"><input type="radio" name="queryType" value="read">Read Only</label>
             <label class="radio-inline"><input type="radio" name="queryType" value="write">Write</label>
+      <label class="radio-inline"><input type="radio" name="queryType" value="csv">Load CSV</label>
             <br/>
             <label for="batch-key" class="control-label">Batch Key:</label>
             <input class="form-control" id="batch-key" value="labelsRemoved"/>
@@ -69,8 +75,8 @@
         </div>
       </div>
     </div>
-	</div>
-	<div class="col-xs-10 col-xs-offset-1" id="summary"></div>
+  </div>
+  <div class="col-xs-10 col-xs-offset-1" id="summary"></div>
 </div>
 <script src="./js/neo4j-web.js"></script>
 <script src="./js/jquery-2.1.1.min.js"></script>
