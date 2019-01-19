@@ -1,0 +1,19 @@
+<div role="tabpanel" class="tab-pane active" id="basic-queries">
+  <!-- TODO: use names, update JS code to use FormData -->
+  <!--<form id="add-query-form">-->
+    <label for="queryName" class="control-label">Query Name:</label>
+    <input [(ngModel)]="query.name" class="form-control" />
+    <label for="cypher" class="control-label">Cypher:</label>
+    <textarea [(ngModel)]="query.cypher" rows=4 placeholder="Enter cypher query" class="form-control" required></textarea>
+    <label for="params" class="control-label">Params: </label>
+    <textarea [(ngModel)]="query.params" rows=3 placeholder="Enter params as JSON" class="form-control"></textarea>
+    <label class="radio-inline"><input type="radio" name="queryType" value="batch">Batched</label>
+    <label class="radio-inline"><input type="radio" name="queryType" value="read">Read Only</label>
+    <label class="radio-inline"><input type="radio" name="queryType" value="write">Write</label>
+    <label class="radio-inline"><input type="radio" name="queryType" value="csv">Load CSV</label>
+    <br/>
+    <label for="batch-key" class="control-label">Batch Key:</label>
+    <input [ngModel]="query.batchKey" class="form-control" value="labelsRemoved"/>
+    <button type="submit" class="btn btn-primary" id="addQuery">Add Query</button>
+    <!--</form>-->
+</div>
