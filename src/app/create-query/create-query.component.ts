@@ -7,7 +7,7 @@ import { Query } from '../query';
   styleUrls: ['./create-query.component.css']
 })
 export class CreateQueryComponent implements OnInit {
-  query: Query = {};
+  query: Query = new Query();
 
   constructor() { }
 
