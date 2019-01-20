@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Input, Component, OnInit } from '@angular/core';
 import { Query } from '../query';
 
 @Component({
@@ -7,6 +7,7 @@ import { Query } from '../query';
   styleUrls: ['./create-query.component.css']
 })
 export class CreateQueryComponent implements OnInit {
+  @Input() formId: string;
   query: Query = new Query();
 
   constructor() { }
