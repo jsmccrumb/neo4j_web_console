@@ -1,5 +1,6 @@
 import { Input, Component, OnInit } from '@angular/core';
 import { Query } from '../query';
+import { QUERY_TYPES } from '../query-types';
 
 @Component({
   selector: 'app-create-query',
@@ -9,10 +10,12 @@ import { Query } from '../query';
 export class CreateQueryComponent implements OnInit {
   @Input() formId: string;
   query: Query = new Query();
+  queryTypes = QUERY_TYPES;
 
   constructor() { }
 
   ngOnInit() {
+    console.log('INIT', this.queryTypes, this.query);
   }
 
 }

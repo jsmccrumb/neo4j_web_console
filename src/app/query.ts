@@ -3,6 +3,6 @@ export class Query {
   name: string;
   cypher: string;
   params: any;
-  queryType: string;
+  queryType: string = "read";
   batchKey: string;
 }
