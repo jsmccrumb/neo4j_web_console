@@ -1,24 +1,27 @@
-<div>
+<form class="columns-1" #createQueryForm="ngForm" (ngSubmit)="onSubmit()">
   <mat-form-field appearance="standard">
     <mat-label>Query Name:</mat-label>
-    <input matInput [(ngModel)]="query.name" type="text">
+    <input matInput [(ngModel)]="query.name" name="name" required>
   </mat-form-field>
   <mat-form-field appearance="standard">
     <mat-label>Cypher:</mat-label>
-    <textarea matInput [(ngModel)]="query.cypher" placeholder="Enter cypher query"></textarea>
+    <textarea matInput [(ngModel)]="query.cypher" name="cypher" placeholder="Enter cypher query" required></textarea>
   </mat-form-field>
   <mat-form-field appearance="standard">
     <mat-label>Params: </mat-label>
-    <textarea matInput [(ngModel)]="query.params" placeholder="Enter params as JSON"></textarea>
+    <textarea matInput [(ngModel)]="query.params" name="params" placeholder="Enter params as JSON"></textarea>
   </mat-form-field>
   <mat-form-field appearance="standard">
     <mat-label>Query Type:</mat-label>
-    <mat-select [(ngModel)]="query.queryType">
+    <mat-select [(ngModel)]="query.queryType" name="queryType" required>
       <mat-option *ngFor="let type of queryTypes" [value]="type.value">{{type.viewValue}}</mat-option>
     </mat-select>
   </mat-form-field>
-  <mat-form-field appearance="standard">
+  <mat-form-field appearance="standard" *ngIf="query.queryType === 'batch'">
     <mat-label>Batch Key:</mat-label>
-    <input matInput [(ngModel)]="query.batchKey">
+    <input matInput [(ngModel)]="query.batchKey" name="batchKey">
   </mat-form-field>
-</div>
+  <div>
+    <button mat-raised-button color="primary" type="submit" [disabled]="!createQueryForm.form.valid">Add Query</button>
+  </div>
+</form>

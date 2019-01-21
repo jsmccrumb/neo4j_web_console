@@ -6,7 +6,7 @@ export const QUERY_TYPES: any[] = [
   },
   {
     value: 'write',
-    veiwValue: 'Write',
+    viewValue: 'Write',
     description: 'Runs a single write transaction'
   },
   {

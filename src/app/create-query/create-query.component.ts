@@ -15,7 +15,10 @@ export class CreateQueryComponent implements OnInit {
   constructor() { }
 
   ngOnInit() {
-    console.log('INIT', this.queryTypes, this.query);
+  }
+
+  onSubmit() {
+    console.log('submit!', this);
   }
 
 }
