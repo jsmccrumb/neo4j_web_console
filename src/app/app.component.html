@@ -4,4 +4,11 @@
     Welcome to {{ title }}!
   </h1>
 </div>
-<app-create-query formId="basic-query"></app-create-query>
+<mat-tab-group>
+  <mat-tab label="Run Query">
+    <app-create-query></app-create-query>
+  </mat-tab>
+  <mat-tab label="Add Adhoc Process">
+    <app-create-query></app-create-query>
+  </mat-tab>
+</mat-tab-group>

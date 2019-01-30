@@ -19,7 +19,9 @@
   </mat-form-field>
   <mat-form-field appearance="standard" *ngIf="query.queryType === 'batch'">
     <mat-label>Batch Key:</mat-label>
-    <input matInput [(ngModel)]="query.batchKey" name="batchKey">
+    <mat-select [(ngModel)]="query.batchKey" name="batchKey">
+      <mat-option *ngFor="let key of batchKeys" [value]="key.value">{{key.viewValue}}</mat-option>
+    </mat-select>
   </mat-form-field>
   <div>
     <button mat-raised-button color="primary" type="submit" [disabled]="!createQueryForm.form.valid">Add Query</button>
