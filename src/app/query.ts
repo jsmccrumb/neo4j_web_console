@@ -4,5 +4,7 @@ export class Query {
   cypher: string;
   params: any;
   queryType: string = "read";
-  batchKey: string;
+  batchKey: string = "labelsRemoved";
+  status: string = "new";
+  result: any;
 }

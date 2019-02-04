@@ -1,0 +1,16 @@
+<cdk-virtual-scroll-viewport itemSize="33" style="height: 70vh">
+<table class="table table-striped table-hover table-sm">
+	<thead class="thead-light">
+		<tr>
+			<th *ngFor="let column of columns" class="{{column.headerClass}} {{column.columnClass}}">{{column.headerText}}</th>
+		</tr>
+	</thead>
+	<tbody>
+<ng-container *cdkVirtualFor="let item of items">
+<tr>
+	<td *ngFor="let column of columns" class="{{column.columnClass}}">{{getProp(item, column.dataProperty)}}</td>
+</tr>
+</ng-container>
+	</tbody>
+</table>
+</cdk-virtual-scroll-viewport>
