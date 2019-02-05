@@ -8,12 +8,13 @@ import { Input, Output, EventEmitter, Component, OnInit } from '@angular/core';
 export class DriverFormComponent implements OnInit {
   @Output() login = new EventEmitter<any>();
   driver = {
-  bolt: 'bolt://localhost',
-  userName: '',
-  password: ''
+    bolt: 'bolt://localhost',
+    userName: '',
+    password: ''
   };
   bolts: any[] = [
-  {value: 'bolt://localhost', viewValue: 'LOCAL'}  ];
+    {value: 'bolt://localhost', viewValue: 'LOCAL'}
+  ];
 
   constructor() { }
 
@@ -21,7 +22,7 @@ export class DriverFormComponent implements OnInit {
   }
 
   onSubmit() {
-  this.login.emit(this.driver);
+    this.login.emit(this.driver);
   }
 
 }

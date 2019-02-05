@@ -6,6 +6,7 @@
 /dist
 /tmp
 /out-tsc
+*win32*
 
 # dependencies
 /node_modules

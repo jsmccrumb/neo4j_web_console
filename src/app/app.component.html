@@ -1,34 +1,44 @@
 <div class="container-fluid">
 	<div class="row">
-  <h1 class="col">
-    Welcome to {{ title }}!
-  </h1>
-</div>
-<div class="row {{driver == null ? '' : 'd-none'}}">
-	<div class="col-xs-12 col-sm-8 col-md-6 offset-md-3">
-	<app-driver-form (login)="getDriver($event)"></app-driver-form>
-	</div>
-</div>
-<div class="row {{driver == null ? 'd-none' : ''}}">
-	<div class="col-xs-12 col-lg-8 col-xl-5 offset-xl-1">
-	<mat-tab-group>
-  <mat-tab label="Run Query">
-    <app-create-query (addQuery)="queueQuery($event)"></app-create-query>
-  </mat-tab>
-  <mat-tab label="Add Adhoc Process">
-    <app-create-query></app-create-query>
-  </mat-tab>
-</mat-tab-group>
-	</div>
-	<div class="d-none d-lg-block col-lg-4 col-xl-5">
-		<mat-action-list>
-			<button *ngFor="let q of queries" mat-list-item (click)="showQuery(q)">{{q.name}}</button>
-		</mat-action-list>
-	</div>
+    <h1 class="col">
+      Welcome to {{ title }}!
+    </h1>
+  </div>
+  <div class="row {{driver == null ? '' : 'd-none'}}">
+   <div class="col-xs-12 col-sm-8 col-md-6 offset-md-3">
+     <app-driver-form (login)="getDriver($event)"></app-driver-form>
+   </div>
+ </div>
+ <div class="row {{driver == null ? 'd-none' : ''}}">
+   <div class="col-xs-12 col-lg-8 col-xl-5 offset-xl-1">
+     <mat-tab-group>
+      <mat-tab label="Run Query">
+        <app-create-query [query]="queryToEdit" (addQuery)="queueQuery($event)"></app-create-query>
+      </mat-tab>
+      <mat-tab label="Add Adhoc Process">
+        <app-create-query></app-create-query>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+  <div class="d-none d-lg-block col-lg-4 col-xl-5">
+    <mat-list>
+      <mat-list-item *ngFor="let q of queries" mat-list-item>
+        <span>
+          <mat-icon *ngIf="q.status == 'complete'">done</mat-icon>
+          <mat-icon *ngIf="q.status == 'running'">cached</mat-icon>
+          {{q.name}}
+        </span>
+        <button class="ml-4" (click)="editQuery(q)"><mat-icon>edit</mat-icon></button>
+        <button class="ml-1" (click)="showQuery(q)"><mat-icon>tablechart</mat-icon></button>
+        <button class="ml-1" (click)="deleteQuery(q)"><mat-icon>delete</mat-icon></button>
+      </mat-list-item>
+   </mat-list>
+ </div>
 </div>
 <div class="row">
 	<div class="col">
-<app-table-view *ngIf="displayTable" columns="tableColumns" items="tableItems"></app-table-view>
-</div>
+    <app-table-view *ngIf="displayTable" [columns]="tableColumns" [items]="tableItems">
+    </app-table-view>
+  </div>
 </div>
 </div>

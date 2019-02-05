@@ -11,7 +11,7 @@ import { SUMMARY_COUNTERS } from '../summary-counters';
 
 export class CreateQueryComponent implements OnInit {
   @Output() addQuery = new EventEmitter<Query>();
-  query: Query = new Query();
+  @Input() query: Query = new Query();
   queryTypes = QUERY_TYPES;
   batchKeys = SUMMARY_COUNTERS.filter(x => x.validBatchKey);
 

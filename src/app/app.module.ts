@@ -13,6 +13,7 @@ import { MatTableModule } from '@angular/material/table';
 import { MatSortModule } from '@angular/material/sort';
 import { ScrollingModule } from '@angular/cdk/scrolling';
 import { MatListModule } from '@angular/material/list';
+import { MatIconModule } from '@angular/material/icon';
 
 import { AppComponent } from './app.component';
 import { CreateQueryComponent } from './create-query/create-query.component';
@@ -40,7 +41,8 @@ import { DriverFormComponent } from './driver-form/driver-form.component';
     MatTableModule,
     MatSortModule,
     ScrollingModule,
-    MatListModule
+    MatListModule,
+    MatIconModule
   ],
   providers: [],
   bootstrap: [AppComponent]
